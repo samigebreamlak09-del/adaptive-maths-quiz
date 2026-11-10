@@ -1,103 +1,143 @@
 import random
 import time
 
-while True:
-    print("      MATH QUIZ APP        ")
-    print("\n1. Easy Math Level (NUMERACY)")
-    print("2. Higher Math Level (TRIG & CALC)")
-    print("3. Advanced Higher Level (LEVEL 3)")
+TOTAL_QUESTIONS = 4
+MAX_ATTEMPTS = 3
 
-    while True:
-        level = input("Choose your level (1, 2 or 3): ").strip()
-        if level in ["1", "2", "3"]:
-            break
+
+def show_menu():
+    print("========== MATHS QUIZ ==========")
+    print("1. Level 1 - Numeracy")
+    print("2. Level 2 - Higher (trig and calculus)")
+    print("3. Level 3 - Advanced Higher")
+    print("--------------------------------")
+
+
+def get_level():
+    level = input("Choose your starting level (1, 2 or 3): ").strip()
+    while level != "1" and level != "2" and level != "3":
         print("Invalid choice. Please enter 1, 2 or 3.")
+        level = input("Choose your starting level (1, 2 or 3): ").strip()
+    return int(level)
 
-    print("---------------------------------")
 
-    total_problems = 4
+def clean(text):
+    # remove spaces and capital letters so "Cos(x)" and "cos(x)" both match
+    return text.replace(" ", "").lower()
 
-    if level == "1":
-        print("Loading Level 1: Easy Math...")
-        operators = ["+", "-", "*"]
-        min_operand = 3
-        max_operand = 12
-        def generate_problem():
-            left = random.randint(min_operand, max_operand)
-            right = random.randint(min_operand, max_operand)
-            operator = random.choice(operators)
-            expr = str(left) + " " + operator + " " + str(right)
-            answer = eval(expr)
-            return expr, answer
-            
-        input("press enter to start ")
-        print("---------------------------------")
-        
-        start_time = time.time()
-        score = 0
-        
-        for i in range(total_problems):
-            expr, answer = generate_problem()
-            attempts = 0
-            correct = False
-            while attempts < 3:
-                guess = input("problem #" + str(i + 1) + ": " + expr + " = ").strip()
-                if guess == str(answer).lower():
-                    print("Correct!\n")
-                    score = score + 1
-                    correct = True
-                    break
-                else:
-                    attempts = attempts + 1
-                    print(f"Incorrect. {3 - attempts} attempts remaining.")
-            if not correct:
-                print(f"Out of tries! The correct answer was: {answer}\n")
-                
-        total_run = total_problems
 
+def generate_problem():
+    # Level 1: a new random problem every time (no eval needed)
+    left = random.randint(3, 12)
+    right = random.randint(3, 12)
+    operator = random.choice(["+", "-", "*"])
+    if operator == "+":
+        answer = left + right
+    elif operator == "-":
+        answer = left - right
     else:
-        if level == "2":
-            print("Loading Level 2: Higher Math...")
-            questions = ["Exact value of sin(45 degrees) (format as 1/root X)", "Gradient of y = 4x^2 at x = 1.5", "Derivative of sin(x)", "Value of log2(8)"]
-            answers = ["1/root 2", "12", "cos(x)", "3"]
-        else:
-            print("Loading Level 3: Advanced Higher Math...")
-            questions = ["What is the integral of x * e^x dx using integration by parts? (format e.g: 2x*e^x - e^x)", "What is the Cartesian form of z = 2(cos(pi/3) + i*sin(pi/3))? (format e.g: 3 + 4i)","What is the derivative of ln(sin(x)) (HINT) using the chain rule (format e.g: tan(x))","Which proof method assumes the negation of the statement to find a contradiction? (format e.g: Proof by induction)"]
-            answers = ["x*e^x - e^x", "1 + root 3 i", "cot(x)", "Proof by contradiction"]
+        answer = left * right
+    question = str(left) + " " + operator + " " + str(right)
+    return question, [str(answer)]
 
-        input("press enter to start ")
-        print("---------------------------------")
-        
-        start_time = time.time()
-        score = 0
 
-        for i in range(len(questions)):
-            attempts = 0
-            correct = False
-            while attempts < 3:
-                guess = input("problem #" + str(i + 1) + ": " + questions[i] + " = ").strip()
-                if guess == answers[i]:
-                    print("Correct!\n")
-                    score = score + 1
-                    correct = True
-                    break
-                else:
-                    attempts = attempts + 1
-                    print(f"Incorrect. {3 - attempts} attempts remaining.")
-            if not correct:
-                print(f"Out of tries! The correct answer was: {answers[i]}\n")
-                
-        total_run = len(questions)
+def get_fixed_questions(level):
+    # each question has a list of accepted answers (already cleaned)
+    if level == 2:
+        questions = [
+            "Exact value of sin(45 degrees) (format: 1/root 2)",
+            "Gradient of y = 4x^2 at x = 1.5",
+            "Derivative of sin(x) (format: sin(x))",
+            "Value of log2(8)",
+        ]
+        answers = [
+            ["1/root2", "1/sqrt2"],
+            ["12"],
+            ["cos(x)", "cosx"],
+            ["3"],
+        ]
+    else:
+        questions = [
+            "Integral of x * e^x dx by parts (format: 2x*e^x - e^x)",
+            "Cartesian form of z = 2(cos(pi/3) + i*sin(pi/3)) (format: 3 + 4i, use root for square root)",
+            "Derivative of ln(sin(x)) using the chain rule (format: tan(x))",
+            "Which proof method assumes the negation of the statement to find a contradiction?",
+        ]
+        answers = [
+            ["x*e^x-e^x", "x*e^x-e^x+c"],
+            ["1+root3i", "1+sqrt3i"],
+            ["cot(x)", "cotx", "1/tan(x)"],
+            ["proofbycontradiction", "contradiction"],
+        ]
+    return questions, answers
 
-    end_time = time.time()
-    total_time = round(end_time - start_time, 2)
 
-    print("---------------------------------")
-    print("Welldone friend! You got", score, "out of", total_run, "correct in", total_time, "seconds")
-    print("---------------------------------")
+def ask_question(number, question, accepted):
+    # returns True if the pupil gets it right within MAX_ATTEMPTS
+    attempts = 0
+    while attempts < MAX_ATTEMPTS:
+        guess = clean(input("Question " + str(number) + ": " + question + " = "))
+        if guess in accepted:
+            print("Correct!\n")
+            return True
+        attempts = attempts + 1
+        remaining = MAX_ATTEMPTS - attempts
+        if remaining > 0:
+            print("Incorrect. " + str(remaining) + " attempts remaining.")
+    print("Out of tries! The correct answer was: " + accepted[0] + "\n")
+    return False
 
-    play_again = input("Do you want to try again? (yes/no)").strip().lower()
-    if play_again != 'YES':
-        print("Thanks for playing bro Goodluck!.")
-        break
-    print("\n" * 3)
+
+def play_round(level):
+    if level == 1:
+        questions = []
+        answers = []
+        for i in range(TOTAL_QUESTIONS):
+            question, accepted = generate_problem()
+            questions.append(question)
+            answers.append(accepted)
+    else:
+        questions, answers = get_fixed_questions(level)
+
+    input("Press enter to start ")
+    print("--------------------------------")
+    start_time = time.time()
+    score = 0
+    for i in range(len(questions)):
+        if ask_question(i + 1, questions[i], answers[i]):
+            score = score + 1
+    total_time = round(time.time() - start_time, 2)
+    return score, len(questions), total_time
+
+
+def choose_next_level(level, score, total):
+    # the quiz adapts to how the pupil performed
+    if score == total and level < 3:
+        print("Full marks! Moving you up to level " + str(level + 1) + ".")
+        return level + 1
+    elif score <= 1 and level > 1:
+        print("Let's build confidence - moving you down to level " + str(level - 1) + ".")
+        return level - 1
+    else:
+        print("Staying on level " + str(level) + ".")
+        return level
+
+
+def main():
+    show_menu()
+    level = get_level()
+    playing = True
+    while playing:
+        print("\nLoading level " + str(level) + "...")
+        score, total, seconds = play_round(level)
+        print("--------------------------------")
+        print("Well done! You got " + str(score) + " out of " + str(total) + " in " + str(seconds) + " seconds.")
+        level = choose_next_level(level, score, total)
+        print("--------------------------------")
+        again = input("Do you want to play again? (yes/no): ").strip().lower()
+        if again != "yes":
+            playing = False
+    print("Thanks for playing. Good luck with your exams!")
+
+
+main()
